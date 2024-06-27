@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "995459662678",
+    "project_id": "raymisa-52493",
+    "storage_bucket": "raymisa-52493.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:995459662678:android:e9e82f50361260423fccf7",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzfkJv_u3cXC246_V6JJJiRzQinLnbEqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:995459662678:android:0997dbf0984b90f13fccf7",
+        "android_client_info": {
+          "package_name": "com.omar.raymisa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzfkJv_u3cXC246_V6JJJiRzQinLnbEqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
