@@ -1,4 +1,4 @@
-# raymisa_flutter
+# CountCraft
 
 ## Descripción
 Sistema para la gestión de ventas textiles desarrollado en Flutter. Esta aplicación permite administrar órdenes, inventarios y reportes de ventas de manera eficiente.
@@ -13,7 +13,7 @@ Sistema para la gestión de ventas textiles desarrollado en Flutter. Esta aplica
 ## Instalación
 1. Clona el repositorio:
    ```sh
-   git clone https://github.com/Omarsx1/raymisa_flutter.git
+   git clone https://github.com/StephannyPA/CountCraft.git
 
 
 ## Navega al directorio del proyecto:
@@ -55,4 +55,4 @@ Las contribuciones son bienvenidas. Por favor, sigue los siguientes pasos:
 ## Licencia
 Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo LICENSE para más detalles.
 
-## ¡Gracias por usar raymisa_flutter!
+## ¡Gracias por usar CountCraft!
