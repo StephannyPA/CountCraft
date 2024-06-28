@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:raymisa/widgets/login.dart';
+import 'package:raymisa/widgets/login.dart'; // Importa la clase LoginPage desde su ubicación correcta
 import 'package:raymisa/menu/perfil.dart'; // Asegúrate de importar la página de perfil correctamente
 
 class Configuracion extends StatelessWidget {
