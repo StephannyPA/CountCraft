@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
 
-class Material {
+class Proceso {
   String nombre;
   double costo;
 
-  Material({required this.nombre, required this.costo});
+  Proceso({required this.nombre, required this.costo});
 }
 
-class MateriaPrimaPage extends StatefulWidget {
-  const MateriaPrimaPage({super.key});
+class ProcesoPage extends StatefulWidget {
+  const ProcesoPage({super.key});
 
   @override
-  _MateriaPrimaPageState createState() => _MateriaPrimaPageState();
+  _ProcesoPageState createState() => _ProcesoPageState();
 }
 
-class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
-  List<Material> materiales = [
-    Material(nombre: 'Hilo Rojo', costo: 2.50),
-    Material(nombre: 'Hilo Azul', costo: 3.00),
-    Material(nombre: 'Hilo Verde', costo: 2.75),
+class _ProcesoPageState extends State<ProcesoPage> {
+  List<Proceso> procesos = [
+    Proceso(nombre: 'Corte', costo: 10.00),
+    Proceso(nombre: 'Confección', costo: 20.00),
+    Proceso(nombre: 'Plancha', costo: 5.00),
   ];
 
   final _nombreController = TextEditingController();
   final _costoController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  void _agregarMaterial() {
+  void _agregarProceso() {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        materiales.add(Material(
+        procesos.add(Proceso(
           nombre: _nombreController.text,
           costo: double.parse(_costoController.text),
         ));
@@ -39,11 +39,11 @@ class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
     }
   }
 
-  void _mostrarFormularioAgregarMaterial() {
+  void _mostrarFormularioAgregarProceso() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Agregar Nuevo Material'),
+        title: Text('Agregar Nuevo Proceso'),
         content: Form(
           key: _formKey,
           child: Column(
@@ -51,10 +51,10 @@ class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
             children: <Widget>[
               TextFormField(
                 controller: _nombreController,
-                decoration: InputDecoration(labelText: 'Nombre del Material'),
+                decoration: InputDecoration(labelText: 'Nombre del Proceso'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese el nombre del material';
+                    return 'Por favor, ingrese el nombre del proceso';
                   }
                   return null;
                 },
@@ -82,7 +82,7 @@ class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
             child: Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: _agregarMaterial,
+            onPressed: _agregarProceso,
             child: Text('Agregar'),
           ),
         ],
@@ -94,7 +94,7 @@ class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Materia Prima'),
+        title: Text('Proceso'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -102,13 +102,13 @@ class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
           children: <Widget>[
             Expanded(
               child: ListView.builder(
-                itemCount: materiales.length,
+                itemCount: procesos.length,
                 itemBuilder: (context, index) {
-                  final material = materiales[index];
+                  final proceso = procesos[index];
                   return Card(
                     child: ListTile(
-                      title: Text(material.nombre),
-                      subtitle: Text('Costo: \$${material.costo.toStringAsFixed(2)}'),
+                      title: Text(proceso.nombre),
+                      subtitle: Text('Costo: \$${proceso.costo.toStringAsFixed(2)}'),
                     ),
                   );
                 },
@@ -116,8 +116,8 @@ class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
             ),
             SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _mostrarFormularioAgregarMaterial,
-              child: Text('Agregar Nuevo Material'),
+              onPressed: _mostrarFormularioAgregarProceso,
+              child: Text('Agregar Nuevo Proceso'),
             ),
           ],
         ),

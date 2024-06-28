@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:raymisa/views/Procesos.dart';
 import 'package:raymisa/views/reporte.dart'; // Asegúrate de que esta ruta sea correcta
 import 'package:raymisa/views/materia_prima.dart'; // Asegúrate de que esta ruta sea correcta
 
@@ -21,7 +22,7 @@ class InventoryPage extends StatelessWidget {
     onTap: () {
     Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => const Reporte()),
+    MaterialPageRoute(builder: (context) => const ProcesoPage()),
     );
     },
     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Prenda {
   final String tipo;
@@ -9,7 +10,7 @@ class Prenda {
 }
 
 class Orden extends StatefulWidget {
-  const Orden({super.key});
+  const Orden({Key? key}) : super(key: key);
 
   @override
   _OrdenState createState() => _OrdenState();
@@ -31,6 +32,7 @@ class _OrdenState extends State<Orden> {
   void initState() {
     super.initState();
     _fechaEntregaController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    _tipoPrenda = null; // Inicialmente no se selecciona ningún tipo de prenda
   }
 
   void _agregarPrenda(String prenda) {
@@ -106,12 +108,42 @@ class _OrdenState extends State<Orden> {
 
   void _generarOrden() {
     if (_formKey.currentState!.validate()) {
-      final int ordenNumero = _ordenCounter++;
+      final String nombreCliente = _nombreClienteController.text.trim();
+      final String fechaEntrega = _fechaEntregaController.text.trim();
       final String nombreColeccion = _nombreColeccionController.text.trim();
-      // Procesar la orden
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Orden generada con éxito: Orden$ordenNumero, Colección: $nombreColeccion')),
-      );
+      final List<Map<String, dynamic>> prendas = _prendasSeleccionadas
+          .map((prenda) => {
+        'tipo': prenda.tipo,
+        'modelo': prenda.modelo ?? '',
+      })
+          .toList();
+
+      // Acceder a la instancia de Firestore
+      FirebaseFirestore.instance.collection('Orden').add({
+        'Coleccion': nombreColeccion,
+        'Nombre': nombreCliente,
+        'Tiempo': Timestamp.fromDate(DateTime.now()),
+        'Prendas': prendas,
+      }).then((value) {
+        // Mostrar un mensaje o realizar alguna acción después de guardar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Orden registrada correctamente')),
+        );
+
+        // Limpiar campos después de guardar la orden correctamente
+        setState(() {
+          _nombreClienteController.clear();
+          _nombreColeccionController.clear();
+          _fechaEntregaController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+          _tipoPrenda = null; // Reiniciar selección de tipo de prenda
+        });
+      }).catchError((error) {
+        // Manejar errores
+        print('Error al guardar la orden: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al guardar la orden')),
+        );
+      });
     }
   }
 
@@ -164,6 +196,7 @@ class _OrdenState extends State<Orden> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _tipoPrenda,
+                hint: const Text('Seleccione un tipo de prenda'),
                 decoration: const InputDecoration(labelText: 'Tipo de Prenda'),
                 items: _tiposPrenda.map((String tipo) {
                   return DropdownMenuItem<String>(
@@ -172,9 +205,9 @@ class _OrdenState extends State<Orden> {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    _agregarPrenda(newValue);
-                  }
+                  setState(() {
+                    _tipoPrenda = newValue;
+                  });
                 },
                 validator: (value) {
                   if (value == null) {
