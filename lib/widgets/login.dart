@@ -14,6 +14,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final _passwordFocusNode = FocusNode();
 
   String _connectionStatus = '';
 
@@ -21,6 +22,14 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _checkConnection();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
   }
 
   void _checkConnection() async {
@@ -104,6 +113,10 @@ class _LoginPageState extends State<LoginPage> {
                     children: <Widget>[
                       TextFormField(
                         controller: _emailController,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) {
+                          FocusScope.of(context).requestFocus(_passwordFocusNode);
+                        },
                         decoration: InputDecoration(
                           labelText: 'Correo',
                           filled: true,
@@ -122,6 +135,8 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(height: 20),
                       TextFormField(
                         controller: _passwordController,
+                        focusNode: _passwordFocusNode,
+                        textInputAction: TextInputAction.done,
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           filled: true,
@@ -153,7 +168,6 @@ class _LoginPageState extends State<LoginPage> {
                           child: Text('Ingresar'),
                         ),
                       ),
-
                       Visibility(
                         visible: false,  // Hace que el widget no sea visible
                         child: Text(

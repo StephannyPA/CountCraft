@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:raymisa/widgets/login.dart';
 
 class Configuracion extends StatelessWidget {
   const Configuracion({super.key});
@@ -76,8 +78,25 @@ class Configuracion extends StatelessWidget {
               );
             },
           ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Cerrar sesión'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () {
+              _signOut(context);
+            },
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _signOut(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false,
     );
   }
 }
