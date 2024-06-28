@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:raymisa/widgets/bottom_nav_bar.dart';
 import 'package:raymisa/widgets/Login.dart';
 
 void main() async {
@@ -45,8 +47,28 @@ class MyApp extends StatelessWidget {
             useMaterial3: true,
           ),
           themeMode: ThemeMode.system,
-          home: const LoginPage(), // Carga la página de login
+          home: const AuthWrapper(), // Carga la página de autenticación
         );
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasData) {
+          return const BottomNavBar(); // Usuario autenticado
+        }
+        return const LoginPage(); // Usuario no autenticado
       },
     );
   }
