@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:raymisa/widgets/login.dart';
+import 'package:raymisa/menu/perfil.dart'; // Asegúrate de importar la página de perfil correctamente
 
 class Configuracion extends StatelessWidget {
   const Configuracion({super.key});
@@ -13,82 +14,95 @@ class Configuracion extends StatelessWidget {
         centerTitle: true,
       ),
       body: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: <Widget>[
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Perfil'),
-            subtitle: const Text('Editar perfil'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PerfilPage()),
-              );
-            },
+          _buildCustomListTile(
+            context,
+            icon: Icons.person,
+            title: 'Perfil',
+            subtitle: 'Editar perfil',
+            page: const PerfilPage(),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.lock),
-            title: const Text('Privacidad'),
-            subtitle: const Text('Configuración de privacidad'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PrivacidadPage()),
-              );
-            },
+          _buildDivider(),
+          _buildCustomListTile(
+            context,
+            icon: Icons.lock,
+            title: 'Privacidad',
+            subtitle: 'Configuración de privacidad',
+            page: const PrivacidadPage(),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notificaciones'),
-            subtitle: const Text('Configuración de notificaciones'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificacionesPage()),
-              );
-            },
+          _buildDivider(),
+          _buildCustomListTile(
+            context,
+            icon: Icons.notifications,
+            title: 'Notificaciones',
+            subtitle: 'Configuración de notificaciones',
+            page: const NotificacionesPage(),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Idioma'),
-            subtitle: const Text('Seleccionar idioma'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const IdiomaPage()),
-              );
-            },
+          _buildDivider(),
+          _buildCustomListTile(
+            context,
+            icon: Icons.language,
+            title: 'Idioma',
+            subtitle: 'Seleccionar idioma',
+            page: const IdiomaPage(),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('Sobre la app'),
-            subtitle: const Text('Información sobre la aplicación'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SobreAppPage()),
-              );
-            },
+          _buildDivider(),
+          _buildCustomListTile(
+            context,
+            icon: Icons.info,
+            title: 'Sobre la app',
+            subtitle: 'Información sobre la aplicación',
+            page: const SobreAppPage(),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Cerrar sesión'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              _signOut(context);
-            },
+          _buildDivider(),
+          _buildCustomListTile(
+            context,
+            icon: Icons.logout,
+            title: 'Cerrar sesión',
+            subtitle: '',
+            onTap: () => _signOut(context),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCustomListTile(BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Widget? page,
+    void Function()? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 5.0),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70)),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+        onTap: onTap ?? () {
+          if (page != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => page),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return const Divider(
+      color: Colors.white24,
+      thickness: 1.0,
+      height: 20.0,
     );
   }
 
@@ -102,38 +116,6 @@ class Configuracion extends StatelessWidget {
 }
 
 // Ejemplo de las páginas individuales de configuración:
-
-class PerfilPage extends StatelessWidget {
-  const PerfilPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Perfil'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            const TextField(
-              decoration: InputDecoration(labelText: 'Nombre'),
-            ),
-            const TextField(
-              decoration: InputDecoration(labelText: 'Correo electrónico'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Lógica para guardar la información del perfil
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class PrivacidadPage extends StatelessWidget {
   const PrivacidadPage({super.key});
@@ -252,12 +234,22 @@ class SobreAppPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Versión 1.0.0',
-              style: TextStyle(fontSize: 18),
+              'Raymisa App',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             Text(
-              'Esta es una aplicación para la gestión de procesos y muestras de indumentaria.',
+              'Versión 1.0.0 - Última Actualización: Junio 2024',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Raymisa App es una aplicación diseñada para facilitar la gestión de procesos y muestras de indumentaria. Con una interfaz intuitiva y funciones avanzadas, esta app permite a los usuarios:',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Raymisa App está diseñada pensando en la facilidad de uso y en proporcionar herramientas eficientes para la gestión de procesos y muestras de indumentaria. ¡Esperamos que disfrutes usando nuestra aplicación!',
               style: TextStyle(fontSize: 16),
             ),
           ],
