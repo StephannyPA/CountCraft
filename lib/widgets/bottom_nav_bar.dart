@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:raymisa/menu/muestra_ordenes.dart';
 import 'package:raymisa/views/muestra.dart';
 import 'package:raymisa/menu/Configuracion.dart';
 import 'package:raymisa/menu/Inicio.dart';
@@ -18,7 +19,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
   int _selectedIndex = 0;
 
   static final List<Widget> _widgetOptions = <Widget>[
-    const Inicio(),
+    const MuestraOrdenes(),
     const InventoryPage(),
     const SizedBox.shrink(), // Placeholder for the SpeedDial options
     const Dashboard(),
@@ -52,17 +53,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('Añadir Muestra'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Muestra()),
-                );
-              },
-            ),
+
             ListTile(
               leading: const Icon(Icons.insert_chart),
               title: const Text('Generar Reporte'),

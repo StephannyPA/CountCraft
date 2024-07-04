@@ -10,20 +10,19 @@ class Prenda {
 }
 
 class Orden extends StatefulWidget {
-  const Orden({Key? key}) : super(key: key);
+  const Orden({super.key});
 
   @override
   _OrdenState createState() => _OrdenState();
 }
 
 class _OrdenState extends State<Orden> {
-  static int _ordenCounter = 1;  // Contador estático para las órdenes
   final _formKey = GlobalKey<FormState>();
   final _nombreClienteController = TextEditingController();
   final _direccionController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _fechaEntregaController = TextEditingController();
-  final _nombreColeccionController = TextEditingController(); // Nuevo controlador para el nombre de la colección
+  final _nombreColeccionController = TextEditingController();
   String? _tipoPrenda;
   final List<String> _tiposPrenda = ['Camisa', 'Pantalón', 'Chaqueta', 'Falda'];
   final List<Prenda> _prendasSeleccionadas = [];
@@ -32,7 +31,6 @@ class _OrdenState extends State<Orden> {
   void initState() {
     super.initState();
     _fechaEntregaController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    _tipoPrenda = null; // Inicialmente no se selecciona ningún tipo de prenda
   }
 
   void _agregarPrenda(String prenda) {
@@ -107,18 +105,19 @@ class _OrdenState extends State<Orden> {
   }
 
   void _generarOrden() {
-    if (_formKey.currentState!.validate()) {
+    bool todosLosChipsValidos = _prendasSeleccionadas.every((prenda) => prenda.modelo != null);
+
+    if (_formKey.currentState!.validate() && todosLosChipsValidos) {
       final String nombreCliente = _nombreClienteController.text.trim();
       final String fechaEntrega = _fechaEntregaController.text.trim();
       final String nombreColeccion = _nombreColeccionController.text.trim();
       final List<Map<String, dynamic>> prendas = _prendasSeleccionadas
           .map((prenda) => {
         'tipo': prenda.tipo,
-        'modelo': prenda.modelo ?? '',
+        'modelo': prenda.modelo!,
       })
           .toList();
 
-      // Acceder a la instancia de Firestore
       FirebaseFirestore.instance.collection('Orden').add({
         'Coleccion': nombreColeccion,
         'Nombre': nombreCliente,
@@ -129,14 +128,11 @@ class _OrdenState extends State<Orden> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Orden registrada correctamente')),
         );
-
-        // Limpiar campos después de guardar la orden correctamente
-        setState(() {
-          _nombreClienteController.clear();
-          _nombreColeccionController.clear();
-          _fechaEntregaController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
-          _tipoPrenda = null; // Reiniciar selección de tipo de prenda
-        });
+        _resetForm();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (BuildContext context) => Orden()),
+        );
       }).catchError((error) {
         // Manejar errores
         print('Error al guardar la orden: $error');
@@ -144,7 +140,24 @@ class _OrdenState extends State<Orden> {
           SnackBar(content: Text('Error al guardar la orden')),
         );
       });
+    } else {
+      // Mostrar mensaje de error si algún chip no tiene modelo definido
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Debe completar el modelo de todas las prendas seleccionadas')),
+      );
     }
+  }
+
+  void _resetForm() {
+    setState(() {
+      _nombreClienteController.clear();
+      _direccionController.clear();
+      _telefonoController.clear();
+      _fechaEntregaController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      _nombreColeccionController.clear();
+      _prendasSeleccionadas.clear();
+      _tipoPrenda = null;
+    });
   }
 
   @override
@@ -196,7 +209,6 @@ class _OrdenState extends State<Orden> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _tipoPrenda,
-                hint: const Text('Seleccione un tipo de prenda'),
                 decoration: const InputDecoration(labelText: 'Tipo de Prenda'),
                 items: _tiposPrenda.map((String tipo) {
                   return DropdownMenuItem<String>(
@@ -205,9 +217,9 @@ class _OrdenState extends State<Orden> {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  setState(() {
-                    _tipoPrenda = newValue;
-                  });
+                  if (newValue != null) {
+                    _agregarPrenda(newValue);
+                  }
                 },
                 validator: (value) {
                   if (value == null) {
@@ -252,14 +264,13 @@ class _OrdenState extends State<Orden> {
     );
   }
 
-  //hola
   @override
   void dispose() {
     _nombreClienteController.dispose();
     _direccionController.dispose();
     _telefonoController.dispose();
     _fechaEntregaController.dispose();
-    _nombreColeccionController.dispose(); // Dispose del controlador de nombre de colección
+    _nombreColeccionController.dispose();
     super.dispose();
   }
 }

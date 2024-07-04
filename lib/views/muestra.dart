@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Muestra extends StatefulWidget {
-  const Muestra({super.key});
+  const Muestra({Key? key}) : super(key: key);
 
   @override
   _MuestraState createState() => _MuestraState();
@@ -19,47 +20,64 @@ class _MuestraState extends State<Muestra> {
         title: Text('Registrar Colección de Prendas'),
         centerTitle: true,
       ),
-      body: ListView.builder(
-        itemCount: 6, // Suponiendo que hay 6 colecciones
-        padding: EdgeInsets.all(16.0),
-        itemBuilder: (context, index) {
-          String coleccion = 'Colección ${index + 1}';
-          if (coleccionesCompletadas.contains(coleccion)) {
-            return Container(); // Si la colección está completada, no mostrar el Card
+      body: FutureBuilder<QuerySnapshot>(
+        future: FirebaseFirestore.instance.collection('Orden').get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
           }
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DetalleColeccion(
-                    coleccion: coleccion,
-                    seleccionPorColeccion: seleccionPorColeccion,
-                    tiposPrenda: tiposPrenda,
-                    onSeleccionesCambiadas: (List<String> seleccion) {
-                      setState(() {
-                        seleccionPorColeccion[coleccion] = seleccion;
-                      });
-                    },
-                    onCompletarColeccion: () {
-                      setState(() {
-                        coleccionesCompletadas.add(coleccion); // Agregar la colección a la lista de completadas
-                      });
-                    },
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final List<String> nombresColecciones = snapshot.data!.docs
+              .map((doc) => doc['Coleccion'] as String)
+              .toList();
+
+          return ListView.builder(
+            itemCount: nombresColecciones.length,
+            padding: EdgeInsets.all(16.0),
+            itemBuilder: (context, index) {
+              String coleccion = nombresColecciones[index];
+              if (coleccionesCompletadas.contains(coleccion)) {
+                return Container(); // Si la colección está completada, no mostrar el Card
+              }
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetalleColeccion(
+                        coleccion: coleccion,
+                        seleccionPorColeccion: seleccionPorColeccion,
+                        tiposPrenda: tiposPrenda,
+                        onSeleccionesCambiadas: (List<String> seleccion) {
+                          setState(() {
+                            seleccionPorColeccion[coleccion] = seleccion;
+                          });
+                        },
+                        onCompletarColeccion: () {
+                          setState(() {
+                            coleccionesCompletadas.add(coleccion); // Agregar la colección a la lista de completadas
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: Card(
+                  elevation: 3.0,
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      coleccion,
+                      style: TextStyle(fontSize: 18.0),
+                    ),
                   ),
                 ),
               );
             },
-            child: Card(
-              elevation: 3.0,
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  coleccion,
-                  style: TextStyle(fontSize: 18.0),
-                ),
-              ),
-            ),
           );
         },
       ),
@@ -72,14 +90,14 @@ class DetalleColeccion extends StatefulWidget {
   final Map<String, List<String>> seleccionPorColeccion;
   final List<String> tiposPrenda;
   final ValueChanged<List<String>> onSeleccionesCambiadas;
-  final Function onCompletarColeccion; // Nueva función de callback
+  final Function onCompletarColeccion;
 
   DetalleColeccion({
     required this.coleccion,
     required this.seleccionPorColeccion,
     required this.tiposPrenda,
     required this.onSeleccionesCambiadas,
-    required this.onCompletarColeccion, // Inicializar la función de callback
+    required this.onCompletarColeccion,
   });
 
   @override
@@ -90,7 +108,7 @@ class _DetalleColeccionState extends State<DetalleColeccion> {
   List<String> seleccionActual = [];
   Map<String, bool> checksActivados = {};
   Map<String, Color> iconColors = {};
-  bool botonHabilitado = false; // Variable para controlar la habilitación del botón
+  bool botonHabilitado = false;
 
   @override
   void initState() {
@@ -100,6 +118,34 @@ class _DetalleColeccionState extends State<DetalleColeccion> {
       checksActivados[tipoPrenda] = true;
       iconColors[tipoPrenda] = Colors.blue;
     });
+    _loadPrendasFromFirebase(); // Cargar tipos de prendas desde Firebase al inicializar
+  }
+
+  void _loadPrendasFromFirebase() async {
+    // Obtener los tipos de prendas desde Firebase
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('Orden')
+          .where('Coleccion', isEqualTo: widget.coleccion)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        List<String> prendas = [];
+        for (var doc in querySnapshot.docs) {
+          List<dynamic> prendasData = doc['Prendas'];
+          prendasData.forEach((prenda) {
+            prendas.add(prenda['nombre']); // Agregar solo el nombre de la prenda
+          });
+        }
+
+        setState(() {
+          widget.tiposPrenda.clear(); // Limpiar la lista existente
+          widget.tiposPrenda.addAll(prendas); // Agregar los tipos de prendas desde Firebase
+        });
+      }
+    } catch (e) {
+      print('Error al obtener tipos de prendas: $e');
+    }
   }
 
   void _abrirFormulario(String tipoPrenda) {
@@ -113,7 +159,7 @@ class _DetalleColeccionState extends State<DetalleColeccion> {
               seleccionActual.add(tipoPrenda);
               checksActivados[tipoPrenda] = true;
               iconColors[tipoPrenda] = Colors.green;
-              _verificarHabilitarBoton(); // Verificar si se habilita el botón
+              _verificarHabilitarBoton();
               widget.onSeleccionesCambiadas(seleccionActual);
             });
           },
@@ -122,7 +168,7 @@ class _DetalleColeccionState extends State<DetalleColeccion> {
               seleccionActual.remove(tipoPrenda);
               checksActivados[tipoPrenda] = false;
               iconColors[tipoPrenda] = Colors.blue;
-              _verificarHabilitarBoton(); // Verificar si se habilita el botón
+              _verificarHabilitarBoton();
               widget.onSeleccionesCambiadas(seleccionActual);
             });
           },
@@ -132,13 +178,11 @@ class _DetalleColeccionState extends State<DetalleColeccion> {
   }
 
   void _verificarHabilitarBoton() {
-    // Verificar si todos los iconos están en verde
     bool todosVerdes = iconColors.values.every((color) => color == Colors.green);
     setState(() {
       botonHabilitado = todosVerdes;
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -166,12 +210,10 @@ class _DetalleColeccionState extends State<DetalleColeccion> {
           ),
           Center(
             child: ElevatedButton(
-              onPressed: botonHabilitado // Habilitar el botón según la variable
-                  ? () {
+              onPressed: botonHabilitado ? () {
                 widget.onCompletarColeccion();
                 Navigator.pop(context);
-              }
-                  : null,
+              } : null,
               child: Text('Completar Colección'),
             ),
           ),
@@ -200,23 +242,15 @@ class FormularioDetallePrenda extends StatefulWidget {
 class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _imagenController = TextEditingController();
-  List<String> procesos = ['Bordado', 'Estampado', 'Teñido']; // Opciones de procesos
-  List<String> colores = ['Rojo', 'Azul', 'Verde', 'Negro']; // Opciones de colores
-  List<String> procesosSeleccionados = []; // Lista para almacenar procesos seleccionados
-  List<String> coloresSeleccionados = []; // Lista para almacenar colores seleccionados
-  String? _selectedProceso; // Variable para almacenar el proceso seleccionado
-  String? _selectedColor; // Variable para almacenar el color seleccionado
-
-  // Nuevo controlador y lista para manejar colores seleccionados
-  String? selectedColor;
-  List<String> selectedColors = [];
+  List<String> procesos = ['Bordado', 'Estampado', 'Teñido'];
+  List<String> colores = ['Rojo', 'Azul', 'Verde', 'Negro'];
+  String? _selectedProceso;
+  String? _selectedColor;
 
   void _mostrarMensaje(String seleccion) {
     TextEditingController costoController = TextEditingController();
     TextEditingController tiempoController = TextEditingController();
-
-    final _formKey = GlobalKey<FormState>(); // Nuevo GlobalKey para validar el formulario
-
+    final _formKey = GlobalKey<FormState>();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -233,9 +267,9 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
-                    return null; // Si el valor no está vacío, es válido
+                    return null;
                   } else if (tiempoController.text.isEmpty) {
-                    return 'Debe ingresar al menos el Costo o el Tiempo'; // Mensaje de error si ambos están vacíos
+                    return 'Debe ingresar al menos el Costo o el Tiempo';
                   }
                   return null;
                 },
@@ -247,9 +281,9 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
-                    return null; // Si el valor no está vacío, es válido
+                    return null;
                   } else if (costoController.text.isEmpty) {
-                    return 'Debe ingresar al menos el Costo o el Tiempo'; // Mensaje de error si ambos están vacíos
+                    return 'Debe ingresar al menos el Costo o el Tiempo';
                   }
                   return null;
                 },
@@ -267,14 +301,10 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
           ElevatedButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
-                String costo = costoController.text.trim();
-                String tiempo = tiempoController.text.trim();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Costo: $costo, Tiempo: $tiempo horas')),
-                );
-
-                Navigator.of(context).pop(); // Cerrar el diálogo
+                String detallesPrenda =
+                    'Proceso: $_selectedProceso, Color: $_selectedColor, Costo: \$${costoController.text}, Tiempo: ${tiempoController.text} horas';
+                widget.onGuardar(detallesPrenda);
+                Navigator.of(context).pop();
               }
             },
             child: Text('Guardar'),
@@ -291,150 +321,92 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
         title: Text('Detalles de ${widget.tipoPrenda}'),
         centerTitle: true,
       ),
-      body: WillPopScope(
-        onWillPop: () async {
-          widget.onCancel();
-          return true;
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ingrese los detalles de la prenda ${widget.tipoPrenda}:',
-                  style: TextStyle(fontSize: 16.0),
-                ),
-
-                SizedBox(height: 40.0),
-                // Centrar imagen por defecto
-                Center(
-                  child: Image.asset(
-                    'assets/images/defecto.png', // Ruta de la imagen por defecto
-
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                SizedBox(height: 40.0),
-                // Selector de proceso
-                DropdownButtonFormField<String>(
-                  value: _selectedProceso,
-                  hint: Text('Seleccione el proceso'),
-                  items: procesos.map((proceso) {
-                    return DropdownMenuItem(
-                      value: proceso,
-                      child: Text(proceso),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedProceso = value!;
-                      procesosSeleccionados.add(_selectedProceso!); // Agregar siempre el proceso seleccionado
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor seleccione el proceso';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16.0),
-                // Mostrar procesos seleccionados
-                Wrap(
-                  spacing: 8.0,
-                  children: procesosSeleccionados.map((proceso) {
-                    return GestureDetector(
-                      onTap: () {
-                        _mostrarMensaje(proceso); // Mostrar mensaje al presionar el proceso seleccionado
-                      },
-                      child: Chip(
-                        label: Text(proceso),
-                        onDeleted: () {
-                          setState(() {
-                            procesosSeleccionados.remove(proceso); // Eliminar el proceso seleccionado
-                          });
-                        },
-                      ),
-                    );
-                  }).toList(),
-                ),
-                SizedBox(height: 16.0),
-                // Selector de color
-                DropdownButton<String>(
-                  isExpanded: true, // Añadir esta línea para expandir el botón horizontalmente
-                  value: selectedColor,
-                  hint: Text('Seleccione el color'),
-                  items: colores.map((color) {
-                    return DropdownMenuItem(
-                      value: color,
-                      child: Text(color),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedColor = value!;
-                      selectedColors.add(selectedColor!); // Permitir selecciones múltiples
-                    });
-                  },
-                ),
-                SizedBox(height: 16.0),
-                // Mostrar colores seleccionados
-                Wrap(
-                  spacing: 8.0,
-                  children: selectedColors.map((color) {
-                    return GestureDetector(
-                      onTap: () {
-                        _mostrarMensaje(color); // Mostrar mensaje al presionar el color seleccionado
-                      },
-                      child: Chip(
-                        label: Text(color),
-                        onDeleted: () {
-                          setState(() {
-                            selectedColors.remove(color); // Eliminar el color seleccionado
-                          });
-                        },
-                      ),
-                    );
-                  }).toList(),
-                ),
-                SizedBox(height: 16.0),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        widget.onCancel();
-                        Navigator.pop(context);
-                      },
-                      child: Text('Cancelar'),
-                    ),
-                    SizedBox(width: 16.0),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          final detallesPrenda =
-                              'Detalles de ${widget.tipoPrenda}: Imagen por defecto, Procesos - ${procesosSeleccionados.join(', ')}, Colores - ${selectedColors.join(', ')}';
-                          widget.onGuardar(detallesPrenda);
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: Text('Guardar'),
-                    ),
-                  ],
-                ),
-              ],
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Seleccione un proceso para ${widget.tipoPrenda}:',
+              style: TextStyle(fontSize: 18.0),
             ),
-          ),
+            DropdownButton<String>(
+              value: _selectedProceso,
+              icon: const Icon(Icons.arrow_downward),
+              iconSize: 24,
+              elevation: 16,
+              style: const TextStyle(color: Colors.deepPurple),
+              underline: Container(
+                height: 2,
+                color: Colors.deepPurpleAccent,
+              ),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedProceso = newValue;
+                });
+              },
+              items: procesos.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20.0),
+            Text(
+              'Seleccione un color para ${widget.tipoPrenda}:',
+              style: TextStyle(fontSize: 18.0),
+            ),
+            DropdownButton<String>(
+              value: _selectedColor,
+              icon: const Icon(Icons.arrow_downward),
+              iconSize: 24,
+              elevation: 16,
+              style: const TextStyle(color: Colors.deepPurple),
+              underline: Container(
+                height: 2,
+                color: Colors.deepPurpleAccent,
+              ),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedColor = newValue;
+                });
+              },
+              items: colores.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20.0),
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_selectedProceso != null && _selectedColor != null) {
+                    _mostrarMensaje(widget.tipoPrenda);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Debe seleccionar un proceso y un color.')),
+                    );
+                  }
+                },
+                child: Text('Guardar Detalles de ${widget.tipoPrenda}'),
+              ),
+            ),
+            SizedBox(height: 20.0),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  widget.onCancel();
+                  Navigator.pop(context);
+                },
+                child: Text('Cancelar'),
+              ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _imagenController.dispose();
-    super.dispose();
   }
 }

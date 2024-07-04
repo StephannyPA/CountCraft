@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:raymisa/views/reporte.dart';
 
 class Material {
   String nombre;
@@ -8,34 +10,61 @@ class Material {
 }
 
 class MateriaPrimaPage extends StatefulWidget {
-  const MateriaPrimaPage({super.key});
+  const MateriaPrimaPage({Key? key}) : super(key: key);
 
   @override
   _MateriaPrimaPageState createState() => _MateriaPrimaPageState();
 }
 
 class _MateriaPrimaPageState extends State<MateriaPrimaPage> {
-  List<Material> materiales = [
-    Material(nombre: 'Hilo Rojo', costo: 2.50),
-    Material(nombre: 'Hilo Azul', costo: 3.00),
-    Material(nombre: 'Hilo Verde', costo: 2.75),
-  ];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  List<Material> materiales = [];
 
   final _nombreController = TextEditingController();
   final _costoController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  @override
+  void initState() {
+    super.initState();
+    _cargarMateriales();
+  }
+
+  void _cargarMateriales() {
+    _firestore.collection('Materia').get().then((querySnapshot) {
+      setState(() {
+        materiales = querySnapshot.docs.map((doc) {
+          return Material(
+            nombre: doc['nombre'],
+            costo: doc['costo'],
+          );
+        }).toList();
+      });
+    });
+  }
+
   void _agregarMaterial() {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        materiales.add(Material(
-          nombre: _nombreController.text,
-          costo: double.parse(_costoController.text),
-        ));
+      var nuevoMaterial = Material(
+        nombre: _nombreController.text,
+        costo: double.parse(_costoController.text),
+      );
+
+      _firestore.collection('Materia').add({
+        'nombre': nuevoMaterial.nombre,
+        'costo': nuevoMaterial.costo,
+      }).then((value) {
+        setState(() {
+          materiales.add(nuevoMaterial);
+        });
+        _nombreController.clear();
+        _costoController.clear();
+        Navigator.of(context).pop(); // Cerrar diálogo
+      }).catchError((error) {
+        print("Error al agregar material: $error");
+        // Mostrar mensaje de error al usuario o manejar de otra manera
       });
-      _nombreController.clear();
-      _costoController.clear();
-      Navigator.of(context).pop();
     }
   }
 
