@@ -35,7 +35,8 @@ class InventoryPage extends StatelessWidget {
     onTap: () {
     Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => const MateriaPrimaPage()),
+      MaterialPageRoute(builder: (context) => MateriaPrimaPage()),
+
     );
     },
     ),

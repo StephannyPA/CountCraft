@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart'; // Para generar identificadores únicos
+import 'package:uuid/uuid.dart';
 
 class MuestraOrdenes extends StatefulWidget {
   const MuestraOrdenes({Key? key}) : super(key: key);
@@ -31,7 +31,6 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
           }
 
           var ordenes = snapshot.data!.docs;
-          // Filtrar las órdenes que no están completadas
           var ordenesFiltradas = ordenes.where((orden) {
             var prendas = orden['Prendas'] as List;
             return prendas.any((prenda) => prenda['estado'] != 'verde');
@@ -57,12 +56,11 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                   ),
                 ),
                 children: prendas.map<Widget>((prenda) {
-                  // Asegurarse de que cada prenda tenga un identificador único
                   var idPrenda = prenda['id'] ?? uuid.v4();
                   prenda['id'] = idPrenda;
                   var tipoPrenda = prenda['tipo'] as String;
                   var modeloPrenda = prenda['modelo'] as String;
-                  var estado = prenda['estado'] ?? 'azul'; // Estado inicial azul si no está definido
+                  var estado = prenda['estado'] ?? 'azul';
 
                   return ListTile(
                     title: Text('$tipoPrenda - $modeloPrenda'),
@@ -72,7 +70,6 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                         MaterialPageRoute(builder: (context) => FormularioDetallePrenda(modeloPrenda)),
                       );
                       if (nuevoEstado != null) {
-                        // Actualizar estado en Firestore
                         FirebaseFirestore.instance
                             .collection('Orden')
                             .doc(orden.id)
@@ -90,7 +87,6 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                           print("Estado actualizado en Firestore");
                         }).catchError((error) => print("Error al actualizar estado: $error"));
 
-                        // Actualizar estado local solo si se guarda correctamente en Firestore
                         setState(() {
                           prenda['estado'] = nuevoEstado;
                         });
@@ -132,12 +128,38 @@ class FormularioDetallePrenda extends StatefulWidget {
 
 class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   final _formKey = GlobalKey<FormState>();
-  List<String> procesos = ['Bordado', 'Estampado', 'Teñido']; // Opciones de procesos
-  List<String> colores = ['Rojo', 'Azul', 'Verde', 'Negro']; // Opciones de colores
-  String? _selectedProceso; // Variable para almacenar el proceso seleccionado
-  String? _selectedColor; // Variable para almacenar el color seleccionado
-  List<String> _procesosSeleccionados = []; // Lista de procesos seleccionados
-  List<String> _coloresSeleccionados = []; // Lista de colores seleccionados
+  List<String> procesos = [];
+  List<String> colores = [];
+  String? _selectedProceso;
+  String? _selectedColor;
+  List<String> _procesosSeleccionados = [];
+  List<String> _coloresSeleccionados = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProcesos();
+    _fetchColores();
+  }
+
+  void _fetchProcesos() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Proceso').get();
+    setState(() {
+      procesos = querySnapshot.docs.map((doc) => doc['nombre'] as String).toList();
+    });
+  }
+
+  void _fetchColores() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Materia').get();
+      setState(() {
+        colores = querySnapshot.docs.map((doc) => doc['nombre'] as String).toList();
+        print('Colores obtenidos: $colores'); // Debug: Verificar los colores obtenidos
+      });
+    } catch (e) {
+      print('Error al obtener colores: $e'); // Debug: Verificar si hay algún error
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +182,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
               SizedBox(height: 20.0),
               Center(
                 child: Image.asset(
-                  'assets/images/default_image.png', // Imagen por defecto
+                  'assets/images/default_image.png',
                   width: 200,
                   height: 200,
                 ),
@@ -179,7 +201,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop('amarillo'); // Cancelar y regresar, estado amarillo
+                      Navigator.of(context).pop('amarillo');
                     },
                     child: Text('Cancelar'),
                   ),
@@ -187,8 +209,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        // Validar formulario
-                        Navigator.of(context).pop('verde'); // Guardar y regresar, estado verde
+                        Navigator.of(context).pop('verde');
                       }
                     },
                     child: Text('Guardar'),
@@ -218,7 +239,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
           onChanged: (value) {
             setState(() {
               _selectedProceso = value;
-              _procesosSeleccionados.add(value!); // Agregar sin verificar duplicados
+              _procesosSeleccionados.add(value!);
             });
           },
           validator: (value) {
@@ -249,7 +270,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
           onChanged: (value) {
             setState(() {
               _selectedColor = value;
-              _coloresSeleccionados.add(value!); // Agregar sin verificar duplicados
+              _coloresSeleccionados.add(value!);
             });
           },
           validator: (value) {
