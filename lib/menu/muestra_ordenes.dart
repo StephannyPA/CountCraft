@@ -40,7 +40,7 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
             itemCount: ordenesFiltradas.length,
             itemBuilder: (context, index) {
               var orden = ordenesFiltradas[index];
-              var coleccion = orden['Coleccion'];
+              var coleccion = orden['Coleccion']?.toString() ?? '';
               var prendas = orden['Prendas'] as List;
 
               return ExpansionTile(
@@ -50,7 +50,7 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                   child: Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Text(
-                      '$coleccion',
+                      coleccion,
                       style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -58,9 +58,11 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                 children: prendas.map<Widget>((prenda) {
                   var idPrenda = prenda['id'] ?? uuid.v4();
                   prenda['id'] = idPrenda;
-                  var tipoPrenda = prenda['tipo'] as String;
-                  var modeloPrenda = prenda['modelo'] as String;
-                  var estado = prenda['estado'] ?? 'azul';
+                  var tipoPrenda = prenda['tipo']?.toString() ?? '';
+                  var modeloPrenda = prenda['modelo']?.toString() ?? '';
+                  var estado = prenda['estado']?.toString() ?? 'azul';
+                  var tiempo = prenda['tiempo']?.toString() ?? '';
+                  var costo = prenda['costo']?.toString() ?? '';
 
                   return ListTile(
                     title: Text('$tipoPrenda - $modeloPrenda'),
@@ -79,6 +81,8 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                               return {
                                 ...p,
                                 'estado': nuevoEstado,
+                                'tiempo': tiempo,
+                                'costo': costo,
                               };
                             }
                             return p;
@@ -93,6 +97,12 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                       }
                     },
                     trailing: _buildIconoCheck(estado),
+                    subtitle: Row(
+                      children: [
+                        if (tiempo.isNotEmpty) Chip(label: Text('Tiempo: $tiempo')),
+                        if (costo.isNotEmpty) Chip(label: Text('Costo: $costo')),
+                      ],
+                    ),
                   );
                 }).toList(),
               );
@@ -288,14 +298,116 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   Widget _buildSelectedProcesoChips() {
     return Wrap(
       spacing: 8.0,
-      children: _procesosSeleccionados.map((proceso) => Chip(label: Text(proceso))).toList(),
+      children: _procesosSeleccionados.map((proceso) {
+        return GestureDetector(
+          onTap: () => _showDialog(context, proceso),
+          child: Chip(label: Text(proceso)),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildSelectedColorChips() {
     return Wrap(
       spacing: 8.0,
-      children: _coloresSeleccionados.map((color) => Chip(label: Text(color))).toList(),
+      children: _coloresSeleccionados.map((color) {
+        return GestureDetector(
+          onTap: () => _showDialog(context, color),
+          child: Chip(label: Text(color)),
+        );
+      }).toList(),
     );
+  }
+
+  void _showDialog(BuildContext context, String selectedValue) {
+    final _formKeyDialog = GlobalKey<FormState>();
+    TextEditingController tiempoController = TextEditingController();
+    TextEditingController costoController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Detalles del proceso'),
+          content: Form(
+            key: _formKeyDialog,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Valor seleccionado: $selectedValue'),
+                TextFormField(
+                  controller: tiempoController,
+                  decoration: InputDecoration(
+                    labelText: 'Tiempo',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if ((value == null || value.isEmpty) &&
+                        (costoController.text.isEmpty)) {
+                      return 'Ingrese al menos un valor (tiempo o costo)';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: costoController,
+                  decoration: InputDecoration(
+                    labelText: 'Costo',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if ((value == null || value.isEmpty) &&
+                        (tiempoController.text.isEmpty)) {
+                      return 'Ingrese al menos un valor (tiempo o costo)';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (_formKeyDialog.currentState!.validate()) {
+                  String tiempo = tiempoController.text;
+                  String costo = costoController.text;
+
+                  // Actualizar Firestore con los datos ingresados
+                  await FirebaseFirestore.instance.collection('Detalles').add({
+                    'procesoOColor': selectedValue,
+                    'tiempo': tiempo,
+                    'costo': costo,
+                    'prenda': widget.modeloPrenda, // Agregar nombre de la prenda principal
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+
+                  Navigator.pop(context, {'tiempo': tiempo, 'costo': costo});
+                }
+              },
+              child: Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          if (_procesosSeleccionados.contains(selectedValue)) {
+            _procesosSeleccionados.remove(selectedValue);
+            _procesosSeleccionados.add('$selectedValue - Tiempo: ${value['tiempo']} - Costo: ${value['costo']}');
+          } else if (_coloresSeleccionados.contains(selectedValue)) {
+            _coloresSeleccionados.remove(selectedValue);
+            _coloresSeleccionados.add('$selectedValue - Tiempo: ${value['tiempo']} - Costo: ${value['costo']}');
+          }
+        });
+      }
+    });
   }
 }
