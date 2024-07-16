@@ -69,7 +69,7 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                     onTap: estado == 'verde' ? null : () async {
                       var nuevoEstado = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => FormularioDetallePrenda(modeloPrenda)),
+                        MaterialPageRoute(builder: (context) => FormularioDetallePrenda(modeloPrenda, orden.id)),
                       );
                       if (nuevoEstado != null) {
                         FirebaseFirestore.instance
@@ -81,7 +81,6 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                               return {
                                 ...p,
                                 'estado': nuevoEstado,
-
                               };
                             }
                             return p;
@@ -129,8 +128,9 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
 
 class FormularioDetallePrenda extends StatefulWidget {
   final String modeloPrenda;
+  final String ordenId;
 
-  FormularioDetallePrenda(this.modeloPrenda);
+  FormularioDetallePrenda(this.modeloPrenda, this.ordenId);
 
   @override
   _FormularioDetallePrendaState createState() => _FormularioDetallePrendaState();
@@ -145,6 +145,10 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   List<String> _procesosSeleccionados = [];
   List<String> _coloresSeleccionados = [];
   final Uuid uuid = Uuid();
+
+  // Define los controladores
+  final TextEditingController tiempoController = TextEditingController();
+  final TextEditingController costoController = TextEditingController();
 
   @override
   void initState() {
@@ -308,6 +312,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
       }).toList(),
     );
   }
+
   void _showDialog(BuildContext context, String selectedValue) {
     final _formKeyDialog = GlobalKey<FormState>();
     TextEditingController tiempoController = TextEditingController();
@@ -380,6 +385,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                     'costo': costoController.text.trim(),
                   });
                 }
+
               },
               child: Text('Agregar'),
             ),
@@ -402,37 +408,44 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   }
 
   void _guardarDatosEnCalculo() {
-    FirebaseFirestore.instance.collection('Calculo').add({
-      'coleccion': 'NombreDeLaColeccion', // Cambia esto según tu lógica
-      'detalles': {
-        'tipoPrenda': 'TipoDePrenda',
-        'modeloPrenda': widget.modeloPrenda,
-        'procesos': _procesosSeleccionados.map((proceso) {
-          var partes = proceso.split(' - ');
-          return {
-            'nombre': partes[0],
-            'tiempo': partes.length > 1 ? partes[1].split(': ')[1] : '',
-            'costo': partes.length > 2 ? partes[2].split(': ')[1] : '',
-          };
-        }).toList(),
-        'colores': _coloresSeleccionados.map((color) {
-          var partes = color.split(' - ');
-          return {
-            'nombre': partes[0],
-            'tiempo': partes.length > 1 ? partes[1].split(': ')[1] : '',
-            'costo': partes.length > 2 ? partes[2].split(': ')[1] : '',
-          };
-        }).toList(),
-      },
+    String idPrenda = widget.ordenId; // Asegúrate de usar el ID correcto de la prenda.
+
+    // Actualizar la colección 'Orden'
+    FirebaseFirestore.instance.collection('Orden').doc(widget.ordenId).update({
+      'Prendas': FieldValue.arrayRemove([
+        // Primero eliminamos la prenda existente
+        {'id': idPrenda}
+      ]),
+    }).then((_) {
+      // Luego agregamos la prenda con los nuevos detalles
+      FirebaseFirestore.instance.collection('Orden').doc(widget.ordenId).update({
+        'Prendas': FieldValue.arrayUnion([
+          {
+            'id': idPrenda,
+            'procesos': _procesosSeleccionados.map((proceso) {
+              return {
+                'nombre': proceso.split(' - ')[0],
+                'tiempo': proceso.contains('Tiempo:') ? proceso.split(' - ')[1].split(': ')[1] : '',
+                'costo': proceso.contains('Costo:') ? proceso.split(' - ')[2].split(': ')[1] : '',
+              };
+            }).toList(),
+            'colores': _coloresSeleccionados.map((color) {
+              return {
+                'nombre': color.split(' - ')[0],
+                'tiempo': color.contains('Tiempo:') ? color.split(' - ')[1].split(': ')[1] : '',
+                'costo': color.contains('Costo:') ? color.split(' - ')[2].split(': ')[1] : '',
+              };
+            }).toList(),
+          }
+        ]),
+      });
     }).then((value) {
-      print('Datos guardados en la colección Calculo');
+      print('Detalles de la prenda actualizados en la colección Orden');
       Navigator.of(context).pop('verde');
     }).catchError((error) {
-      print('Error al guardar datos en la colección Calculo: $error');
-      // Puedes agregar manejo de errores aquí si lo necesitas
+      print('Error al actualizar detalles en la colección Orden: $error');
     });
   }
-
 
 
 
