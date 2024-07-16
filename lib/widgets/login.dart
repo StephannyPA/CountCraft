@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: InputDecoration(
                           labelText: 'Correo',
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Colors.black45,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -140,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Colors.black45,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
