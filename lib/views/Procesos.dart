@@ -113,7 +113,15 @@ class ProcesoPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              _agregarProceso(context, _nombreController.text, _costoController.text);
+              if (_nombreController.text.isNotEmpty && _costoController.text.isNotEmpty) {
+                if (_costoController.text.isNotEmpty && double.tryParse(_costoController.text) == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Por favor, ingrese un costo válido')),
+                  );
+                } else {
+                  _agregarProceso(context, _nombreController.text, _costoController.text);
+                }
+              }
             },
             child: Text('Agregar'),
           ),
@@ -123,21 +131,19 @@ class ProcesoPage extends StatelessWidget {
   }
 
   void _agregarProceso(BuildContext context, String nombre, String costo) {
-    if (nombre.isNotEmpty && costo.isNotEmpty) {
-      double costoDouble = double.parse(costo);
-      FirebaseFirestore.instance.collection('Proceso').add({
-        'nombre': nombre,
-        'costo': costoDouble,
-      }).then((value) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Proceso agregado correctamente')),
-        );
-        Navigator.of(context).pop();
-      }).catchError((error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al agregar el proceso: $error')),
-        );
-      });
-    }
+    double costoDouble = double.parse(costo);
+    FirebaseFirestore.instance.collection('Proceso').add({
+      'nombre': nombre,
+      'costo': costoDouble,
+    }).then((value) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Proceso agregado correctamente')),
+      );
+      Navigator.of(context).pop();
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al agregar el proceso: $error')),
+      );
+    });
   }
 }

@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.black, Colors.blueAccent],
+            colors: [Colors.black, Colors.white],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -95,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Colors.black,
                   ),
                 ),
                 SizedBox(height: 10),
@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                   'Bienvenido de nuevo, inicie sesión en su cuenta',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white70,
+                    color: Colors.black,
                   ),
                 ),
                 SizedBox(height: 30),

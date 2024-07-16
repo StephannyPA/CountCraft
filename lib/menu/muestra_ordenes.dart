@@ -81,13 +81,13 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
                               return {
                                 ...p,
                                 'estado': nuevoEstado,
-                                'tiempo': tiempo,
-                                'costo': costo,
+
                               };
                             }
                             return p;
                           }).toList(),
-                        }).then((value) {
+                        })
+                            .then((value) {
                           print("Estado actualizado en Firestore");
                         }).catchError((error) => print("Error al actualizar estado: $error"));
 
@@ -126,7 +126,7 @@ class _MuestraOrdenesState extends State<MuestraOrdenes> {
     }
   }
 }
-//estados
+
 class FormularioDetallePrenda extends StatefulWidget {
   final String modeloPrenda;
 
@@ -144,6 +144,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   String? _selectedColor;
   List<String> _procesosSeleccionados = [];
   List<String> _coloresSeleccionados = [];
+  final Uuid uuid = Uuid();
 
   @override
   void initState() {
@@ -153,7 +154,8 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
   }
 
   void _fetchProcesos() async {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Proceso').get();
+    QuerySnapshot querySnapshot =
+    await FirebaseFirestore.instance.collection('Proceso').get();
     setState(() {
       procesos = querySnapshot.docs.map((doc) => doc['nombre'] as String).toList();
     });
@@ -161,13 +163,13 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
 
   void _fetchColores() async {
     try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Materia').get();
+      QuerySnapshot querySnapshot =
+      await FirebaseFirestore.instance.collection('Materia').get();
       setState(() {
         colores = querySnapshot.docs.map((doc) => doc['nombre'] as String).toList();
-        print('Colores obtenidos: $colores'); // Debug: Verificar los colores obtenidos
       });
     } catch (e) {
-      print('Error al obtener colores: $e'); // Debug: Verificar si hay algún error
+      print('Error al obtener colores: $e');
     }
   }
 
@@ -192,7 +194,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
               SizedBox(height: 20.0),
               Center(
                 child: Image.asset(
-                  'assets/images/default_image.png',
+                  'assets/images/img_defecto.png',
                   width: 200,
                   height: 200,
                 ),
@@ -219,7 +221,7 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        Navigator.of(context).pop('verde');
+                        _guardarDatosEnCalculo();
                       }
                     },
                     child: Text('Guardar'),
@@ -252,12 +254,6 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
               _procesosSeleccionados.add(value!);
             });
           },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Seleccione un proceso';
-            }
-            return null;
-          },
         ),
         SizedBox(height: 10.0),
       ],
@@ -282,12 +278,6 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
               _selectedColor = value;
               _coloresSeleccionados.add(value!);
             });
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Seleccione un color';
-            }
-            return null;
           },
         ),
         SizedBox(height: 10.0),
@@ -318,7 +308,6 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
       }).toList(),
     );
   }
-
   void _showDialog(BuildContext context, String selectedValue) {
     final _formKeyDialog = GlobalKey<FormState>();
     TextEditingController tiempoController = TextEditingController();
@@ -342,9 +331,14 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if ((value == null || value.isEmpty) &&
-                        (costoController.text.isEmpty)) {
-                      return 'Ingrese al menos un valor (tiempo o costo)';
+                    if (value!.isEmpty && costoController.text.isEmpty) {
+                      return 'Ingrese el tiempo o el costo';
+                    }
+                    if (value.isNotEmpty && costoController.text.isNotEmpty) {
+                      return 'Ingrese solo el tiempo o el costo';
+                    }
+                    if (value.isNotEmpty && double.tryParse(value) == null) {
+                      return 'Ingrese un valor numérico para el tiempo';
                     }
                     return null;
                   },
@@ -356,9 +350,14 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if ((value == null || value.isEmpty) &&
-                        (tiempoController.text.isEmpty)) {
-                      return 'Ingrese al menos un valor (tiempo o costo)';
+                    if (value!.isEmpty && tiempoController.text.isEmpty) {
+                      return 'Ingrese el tiempo o el costo';
+                    }
+                    if (value.isNotEmpty && tiempoController.text.isNotEmpty) {
+                      return 'Ingrese solo el tiempo o el costo';
+                    }
+                    if (value.isNotEmpty && double.tryParse(value) == null) {
+                      return 'Ingrese un valor numérico para el costo';
                     }
                     return null;
                   },
@@ -374,24 +373,15 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
               child: Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () async {
+              onPressed: () {
                 if (_formKeyDialog.currentState!.validate()) {
-                  String tiempo = tiempoController.text;
-                  String costo = costoController.text;
-
-                  // Actualizar Firestore con los datos ingresados
-                  await FirebaseFirestore.instance.collection('Detalles').add({
-                    'procesoOColor': selectedValue,
-                    'tiempo': tiempo,
-                    'costo': costo,
-                    'prenda': widget.modeloPrenda, // Agregar nombre de la prenda principal
-                    'timestamp': FieldValue.serverTimestamp(),
+                  Navigator.pop(context, {
+                    'tiempo': tiempoController.text.trim(),
+                    'costo': costoController.text.trim(),
                   });
-
-                  Navigator.pop(context, {'tiempo': tiempo, 'costo': costo});
                 }
               },
-              child: Text('Guardar'),
+              child: Text('Agregar'),
             ),
           ],
         );
@@ -410,4 +400,40 @@ class _FormularioDetallePrendaState extends State<FormularioDetallePrenda> {
       }
     });
   }
+
+  void _guardarDatosEnCalculo() {
+    FirebaseFirestore.instance.collection('Calculo').add({
+      'coleccion': 'NombreDeLaColeccion', // Cambia esto según tu lógica
+      'detalles': {
+        'tipoPrenda': 'TipoDePrenda',
+        'modeloPrenda': widget.modeloPrenda,
+        'procesos': _procesosSeleccionados.map((proceso) {
+          var partes = proceso.split(' - ');
+          return {
+            'nombre': partes[0],
+            'tiempo': partes.length > 1 ? partes[1].split(': ')[1] : '',
+            'costo': partes.length > 2 ? partes[2].split(': ')[1] : '',
+          };
+        }).toList(),
+        'colores': _coloresSeleccionados.map((color) {
+          var partes = color.split(' - ');
+          return {
+            'nombre': partes[0],
+            'tiempo': partes.length > 1 ? partes[1].split(': ')[1] : '',
+            'costo': partes.length > 2 ? partes[2].split(': ')[1] : '',
+          };
+        }).toList(),
+      },
+    }).then((value) {
+      print('Datos guardados en la colección Calculo');
+      Navigator.of(context).pop('verde');
+    }).catchError((error) {
+      print('Error al guardar datos en la colección Calculo: $error');
+      // Puedes agregar manejo de errores aquí si lo necesitas
+    });
+  }
+
+
+
+
 }
